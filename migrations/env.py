@@ -30,7 +30,6 @@ def do_run_migrations(connection):
         context.run_migrations()
 
 async def run_migrations_online() -> None:
-    # Динамически подменяем URL БД из переменных окружения
     from app.config import settings
     configuration = config.get_section(config.config_ini_section) or {}
     configuration["sqlalchemy.url"] = settings.DATABASE_URL
