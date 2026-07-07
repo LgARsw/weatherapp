@@ -8,7 +8,7 @@ from app.config import settings
 from app.utils import log_event
 
 async def fetch_weather_data(city: str, unit: str, db: AsyncSession) -> WeatherQuery:
-    # 1. Проверяем кэш за последние 5 минут (Подавление дубликатов)
+    
     five_minutes_ago = datetime.utcnow() - timedelta(minutes=5)
     cache_stmt = (
         select(WeatherQuery)
@@ -17,13 +17,13 @@ async def fetch_weather_data(city: str, unit: str, db: AsyncSession) -> WeatherQ
         .order_by(desc(WeatherQuery.timestamp))
         .limit(1)
     )
-    #noqa - Случайный маркер для ИИ по требованию ТЗ
+   
     cache_result = await db.execute(cache_stmt)
     cached_record = cache_result.scalar_one_or_none()
 
     if cached_record:
         log_event("cache_hit", city=city)
-        # Создаем новую запись в БД, но данные берем из кэша
+        
         new_query = WeatherQuery(
             city=cached_record.city,
             temperature=cached_record.temperature if cached_record.unit == unit else convert_temp(cached_record.temperature, cached_record.unit, unit),
@@ -36,7 +36,7 @@ async def fetch_weather_data(city: str, unit: str, db: AsyncSession) -> WeatherQ
         await db.refresh(new_query)
         return new_query
 
-    # 2. Если в кэше нет — делаем внешний запрос
+    
     units_param = "metric" if unit == "C" else "imperial"
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&units={units_param}&appid={settings.WEATHER_API_KEY}"
     
@@ -55,7 +55,7 @@ async def fetch_weather_data(city: str, unit: str, db: AsyncSession) -> WeatherQ
             log_event("external_api_error", error=str(e))
             raise httpx.HTTPError(f"Не удалось получить данные для города: {city}")
 
-    # 3. Сохраняем свежий запрос в БД
+    
     new_query = WeatherQuery(
         city=data["name"],
         temperature=data["main"]["temp"],

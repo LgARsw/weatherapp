@@ -29,7 +29,6 @@ async def log_requests(request: Request, call_next):
         log_event("request_error", path=request.url.path, error=str(e))
         raise
 
-# Вспомогательная функция для построения фильтрованного запроса к истории
 def build_history_query(city: Optional[str], date_from: Optional[datetime], date_to: Optional[datetime]):
     stmt = select(WeatherQuery).order_by(desc(WeatherQuery.timestamp))
     if city:
@@ -69,12 +68,12 @@ async def get_history(
 ):
     stmt = build_history_query(city, date_from, date_to)
     
-    # Считаем общее кол-во записей для пагинации
+    
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total_result = await db.execute(count_stmt)
     total = total_result.scalar_core()
 
-    # Применяем смещение
+    
     stmt = stmt.offset((page - 1) * limit).limit(limit)
     result = await db.execute(stmt)
     items = result.scalars().all()
@@ -115,7 +114,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     except Exception:
         db_status = "unhealthy"
 
-    # Проверка доступности API (с коротким таймаутом)
+   
     try:
         async with httpx.AsyncClient() as client:
             res = await client.get("https://api.openweathermap.org", timeout=1.5)
@@ -135,7 +134,7 @@ async def home_page(
     date_to: Optional[datetime] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    # Получаем отфильтрованную историю для таблицы
+   
     stmt = build_history_query(filter_city, date_from, date_to).limit(10)
     history_items = (await db.execute(stmt)).scalars().all()
 
@@ -152,10 +151,10 @@ async def web_weather(request: Request, city: str, unit: str = "C", db: AsyncSes
     try:
         current_weather = await fetch_weather_data(city, unit, db)
     except Exception as e:
-        # Если произошла ошибка (например, города нет), можно прокинуть её описание в UI
+       
         pass
 
-    # Подгружаем историю для нижней таблицы, чтобы она не исчезала при поиске
+    
     stmt = select(WeatherQuery).order_by(desc(WeatherQuery.timestamp)).limit(10)
     history_items = (await db.execute(stmt)).scalars().all()
 
