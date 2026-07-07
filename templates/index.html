@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мониторинг Погоды</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <h1 class="mb-4 text-center">⛅ Поиск Погоды и История Запросов</h1>
+
+        <div class="card p-4 mb-4 shadow-sm">
+            <h5 class="card-title mb-3">Запросить текущую погоду</h5>
+            <form action="/web/weather" method="GET" class="row g-3 align-items-center">
+                <div class="col-md-5">
+                    <input type="text" name="city" class="form-control" placeholder="Введите город (например: London, Moscow)" required>
+                </div>
+                <div class="col-md-4">
+                    <select name="unit" class="form-select">
+                        <option value="C">Цельсий (°C)</option>
+                        <option value="F">Фаренгейт (°F)</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">Получить погоду</button>
+                </div>
+            </form>
+
+            {% if current_weather %}
+            <div class="alert alert-info mt-4 mb-0" role="alert">
+                <h4>Погода в {{ current_weather.city }}:</h4>
+                <p class="fs-5 mb-1">Температура: <strong>{{ current_weather.temperature }}°{{ current_weather.unit }}</strong></p>
+                <p class="text-capitalize mb-2">Описание: {{ current_weather.description }}</p>
+                
+                {% if current_weather.served_from_cache %}
+                    <span class="badge bg-warning text-dark">served from cache</span>
+                {% else %}
+                    <span class="badge bg-success">Свежие данные из API</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card p-4 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">История запросов (Фильтры)</h5>
+                <a href="/history/export" class="btn btn-outline-success btn-sm">📥 Экспорт в CSV</a>
+            </div>
+
+            <form action="/" method="GET" class="row g-2 mb-4">
+                <div class="col-md-4">
+                    <input type="text" name="filter_city" class="form-control form-control-sm" placeholder="Фильтр по городу" value="{{ filter_city or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <input type="datetime-local" name="date_from" class="form-control form-control-sm" placeholder="Дата от">
+                </div>
+                <div class="col-md-3">
+                    <input type="datetime-local" name="date_to" class="form-control form-control-sm" placeholder="Дата до">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary btn-sm w-100">Применить</button>
+                </div>
+            </form>
+
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Город</th>
+                        <th>Температура</th>
+                        <th>Описание</th>
+                        <th>Тип ответа</th>
+                        <th>Время запроса</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in history %}
+                    <tr>
+                        <td><strong>{{ item.city }}</strong></td>
+                        <td>{{ item.temperature }}°{{ item.unit }}</td>
+                        <td class="text-capitalize">{{ item.description }}</td>
+                        <td>
+                            {% if item.served_from_cache %}
+                                <span class="badge bg-warning text-dark">served from cache</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark">API Direct</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ item.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
